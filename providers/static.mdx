@@ -1,0 +1,219 @@
+---
+title: 'Static source'
+description: 'Manually enter waste collection dates or define recurring patterns such as every two weeks on a Friday, without relying on a provider API or calendar feed.'
+---
+
+The `static` source lets you define collection schedules by hand. Use it when:
+
+- Your provider is not yet supported and does not publish an ICS feed.
+- Your schedule has one-off dates that differ from the usual pattern.
+- You want to supplement an existing source with additional dates.
+
+Each `static` source entry defines **one waste type**. To schedule multiple types, add multiple `static` sources, or use the [multiple sources wrapper](/guides/multiple-sources).
+
+## Configuration
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: static
+      args:
+        type: TYPE
+        dates: DATES
+        frequency: FREQUENCY
+        interval: INTERVAL
+        start: START
+        until: UNTIL
+        count: COUNT
+        excludes: EXCLUDES
+        weekdays: WEEKDAYS
+```
+
+### Parameters
+
+<ParamField path="type" type="string" required>
+  The name of the waste collection type displayed in Home Assistant (e.g. `Recycling`, `General Waste`, `Garden Waste`).
+</ParamField>
+
+<ParamField path="dates" type="string[]">
+  A list of explicit dates in `YYYY-MM-DD` format. These dates are always included regardless of the recurrence rule and are not affected by the `excludes` list.
+
+  Can be used alone for a fully manual schedule, or alongside `frequency` to add one-off dates on top of a recurring pattern.
+</ParamField>
+
+<ParamField path="frequency" type="string">
+  Recurrence frequency. Must be one of: `DAILY`, `WEEKLY`, `MONTHLY`, `YEARLY`.
+
+  Required when defining a recurring schedule. Must be combined with `start` and either `until` or `count`.
+</ParamField>
+
+<ParamField path="interval" type="number" default="1">
+  Interval between occurrences, relative to `frequency`. For example, `frequency: WEEKLY` with `interval: 2` produces a bi-weekly schedule.
+</ParamField>
+
+<ParamField path="start" type="string">
+  Start date of the recurrence in `YYYY-MM-DD` format. Required when `frequency` is set.
+
+  Always pair with `until` or `count` to bound the recurrence. Without them, only the next 10 events after `start` are returned.
+</ParamField>
+
+<ParamField path="until" type="string">
+  End date of the recurrence in `YYYY-MM-DD` format. The recurrence stops on or before this date.
+</ParamField>
+
+<ParamField path="count" type="number" default="10">
+  Maximum number of dates to return. Only used when `until` is not specified.
+</ParamField>
+
+<ParamField path="excludes" type="string[]">
+  A list of dates in `YYYY-MM-DD` format to remove from the recurrence. Use this to handle holiday substitutions or cancelled collections.
+
+  Dates listed in `dates` are not affected by `excludes`.
+</ParamField>
+
+<ParamField path="weekdays" type="string | object">
+  Constrains the recurrence to specific days of the week. Use the constants `MO`, `TU`, `WE`, `TH`, `FR`, `SA`, `SU`.
+
+  Accepts two formats:
+
+  **Single weekday** — a plain string:
+  ```yaml
+  weekdays: MO
+  ```
+
+  **Dictionary with occurrence index** — useful with `MONTHLY` frequency. A positive integer means the nth occurrence; a negative integer means the nth-from-last occurrence:
+  ```yaml
+  weekdays: { MO: 1, FR: -2 }
+  ```
+
+  `MO: 1` is the first Monday of the month. `FR: -2` is the second-to-last Friday.
+
+  <Warning>
+  When using dictionary format, the colon must be followed by a space (e.g. `MO: 1`, not `MO:1`).
+  </Warning>
+</ParamField>
+
+## Examples
+
+### Explicit dates only
+
+The simplest configuration: a list of specific collection dates.
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: static
+      args:
+        type: "Recycling"
+        dates:
+          - "2025-01-10"
+          - "2025-01-24"
+          - "2025-02-07"
+          - "2025-02-21"
+```
+
+### Weekly collection on a fixed weekday
+
+Collect general waste every Wednesday.
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: static
+      args:
+        type: "General Waste"
+        frequency: WEEKLY
+        weekdays: WE
+```
+
+### Bi-weekly collection
+
+Collect recycling every two weeks starting on 1 February 2025.
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: static
+      args:
+        type: "Recycling"
+        frequency: WEEKLY
+        interval: 2
+        start: "2025-02-01"
+        until: "2025-12-31"
+```
+
+### Every four weeks with date substitutions
+
+Collect paper every four weeks on a Friday, but swap two dates due to public holidays.
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: static
+      args:
+        type: "Paper"
+        frequency: WEEKLY
+        interval: 4
+        start: "2025-01-10"
+        until: "2025-12-31"
+        excludes:
+          - "2025-04-18"   # Good Friday — skip
+          - "2025-12-26"   # Boxing Day — skip
+        dates:
+          - "2025-04-17"   # Replacement date
+          - "2025-12-24"   # Replacement date
+```
+
+### Monthly on the second-to-last Thursday
+
+Collect garden waste on the last-but-one Thursday of each month.
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: static
+      args:
+        type: "Garden Waste"
+        frequency: MONTHLY
+        weekdays: { TH: -2 }
+```
+
+### First Monday of every month
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: static
+      args:
+        type: "Bulky Waste"
+        frequency: MONTHLY
+        weekdays: { MO: 1 }
+```
+
+## Combining multiple waste types
+
+Each `static` source entry handles one waste type. To schedule several types, list multiple sources:
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: static
+      args:
+        type: "General Waste"
+        frequency: WEEKLY
+        weekdays: WE
+    - name: static
+      args:
+        type: "Recycling"
+        frequency: WEEKLY
+        interval: 2
+        start: "2025-01-08"
+        until: "2025-12-31"
+    - name: static
+      args:
+        type: "Garden Waste"
+        frequency: MONTHLY
+        weekdays: { MO: 1 }
+```
+
+If you want all types to appear in a single calendar entity, use the `multiple` wrapper source instead of listing separate top-level sources. See [Multiple sources](/guides/multiple-sources) for details.

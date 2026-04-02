@@ -1,80 +1,187 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Configure your first waste collection source and sensor to get collection dates in Home Assistant."
 ---
 
-## Get started in three steps
+Waste Collection Schedule supports two configuration methods. GUI configuration is recommended for most users — it requires no YAML and walks you through each step in the Home Assistant UI. YAML configuration gives you full control and is required for advanced setups such as multi-source sensors.
 
-Get your documentation site running locally and make your first customization.
+<Tabs>
+  <Tab title="GUI (recommended)">
+    The GUI configuration flow was introduced in version 2.0.0. It adds sources and sensors directly from **Settings** → **Integrations** without editing any files.
 
-### Step 1: Set up your local environment
+    <Steps>
+      <Step title="Open integrations">
+        In Home Assistant, go to **Settings** → **Devices & Services** → **Integrations**, then click **Add Integration**.
+      </Step>
+      <Step title="Search for Waste Collection Schedule">
+        Type `Waste Collection Schedule` in the search box and click the result.
+      </Step>
+      <Step title="Select your country">
+        Choose your country from the list. Select **Generic** if your provider is country-independent (for example, a generic ICS/iCal feed).
+      </Step>
+      <Step title="Select your provider">
+        Choose your waste management service provider from the list of supported providers for your country.
+      </Step>
+      <Step title="Enter provider arguments">
+        Fill in the required fields for your provider — typically your street, city, district, or postcode. The exact fields depend on the provider.
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+        <Tip>
+          See the [Supported Providers](/providers/overview) page for a link to each provider's argument documentation.
+        </Tip>
 
-### Step 2: Deploy your changes
+        You can also set an optional **calendar title** to give your collection calendar a friendly name.
+      </Step>
+      <Step title="Customize waste types (optional)">
+        The integration shows you the waste types returned by your provider. For each type you can:
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+        - Rename it using an **alias**
+        - Assign an **icon** (any `mdi:` icon)
+        - Set a **picture**
+        - Show or hide it
+        - Create a dedicated calendar for it
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+        Skip this step if you want to use the default names.
+      </Step>
+      <Step title="Configure sensors">
+        Add one or more sensors to expose collection data as Home Assistant entities:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+        - Give the sensor a **name** (used as the entity name in HA)
+        - Optionally filter by **waste types** to create a sensor for a specific collection type
+        - Choose a **details format** (`upcoming`, `appointment_types`, `generic`, or `hidden`) for the more-info popup
 
-### Step 3: Go live
+        To add multiple sensors, select **Add additional sensors** before finishing the previous one.
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+        If you do not need any sensors, scroll down and select **Do not create sensor**.
+      </Step>
+      <Step title="Finish and verify">
+        Click **Submit** to complete the setup. Your new source and sensors appear under **Settings** → **Devices & Services** → **Integrations**. Collection dates are also available in the **Calendar** view.
+      </Step>
+    </Steps>
+
+    <Warning>
+      The GUI has the following limitations compared to YAML configuration:
+
+      - Sensors created in the GUI cannot access YAML-configured sources (and vice versa)
+      - A single sensor cannot aggregate data from multiple sources (`source_index` list is not supported)
+      - The `multiple` wrapper source is not supported
+      - Static source configuration has limited support
+
+      If you need any of these features, use [YAML configuration](#yaml-configuration) instead.
+    </Warning>
+  </Tab>
+  <Tab title="YAML">
+    YAML configuration gives you full control over sources and sensors. Add the following to your `configuration.yaml` file, then restart Home Assistant.
+
+    ## Minimal example
+
+    The example below uses `muellmax_de`, a German waste collection provider, to demonstrate a complete working configuration. Replace `muellmax_de` and its arguments with your own provider and values.
+
+    ```yaml configuration.yaml
+    waste_collection_schedule:
+      sources:
+        - name: muellmax_de
+          args:
+            service: His
+            mm_frm_str_sel: My Street
+          customize:
+            - type: brown bin
+              show: false
+            - type: green bin
+              alias: Yard Waste
+            - type: black bin
+              alias: Garbage
+
+    sensor:
+      # Next collection across all waste types
+      - platform: waste_collection_schedule
+        name: next_collection
+
+      # Next yard waste collection only
+      - platform: waste_collection_schedule
+        name: next_yard_collection
+        types:
+          - Yard Waste
+
+      # Next garbage collection only
+      - platform: waste_collection_schedule
+        name: next_garbage_collection
+        types:
+          - Garbage
+    ```
+
+    ## How the configuration works
+
+    **Sources** define where to fetch your schedule from. Each source has a `name` (the provider module) and `args` (provider-specific arguments such as street, city, or district).
+
+    **Sensors** expose collected data as Home Assistant entities. You can have multiple sensors per source — for example, one sensor per waste type.
+
+    ## Using multiple sources
+
+    If your waste is managed by more than one provider, add multiple entries under `sources`:
+
+    ```yaml configuration.yaml
+    waste_collection_schedule:
+      sources:
+        - name: muellmax_de
+          args:
+            service: His
+            mm_frm_str_sel: My Street
+        - name: ics
+          args:
+            url: https://example.com/waste-calendar.ics
+    ```
+
+    Sensors reference sources by index (0-based). To combine data from both sources into one sensor:
+
+    ```yaml configuration.yaml
+    sensor:
+      - platform: waste_collection_schedule
+        name: all_collections
+        source_index:
+          - 0
+          - 1
+    ```
+
+    ## Customizing sensor state with templates
+
+    Use `value_template` to control what the sensor displays. The following variables are available:
+
+    | Variable | Type | Description |
+    |---|---|---|
+    | `value.date` | `datetime.date` | Collection date |
+    | `value.daysTo` | `int` | Days until collection (`0` = today, `1` = tomorrow) |
+    | `value.types` | list of strings | Waste types for this collection |
+
+    ```yaml configuration.yaml
+    sensor:
+      - platform: waste_collection_schedule
+        name: next_collection
+        value_template: '{{value.types|join(", ")}} in {{value.daysTo}} days'
+
+      - platform: waste_collection_schedule
+        name: next_collection_date
+        value_template: 'on {{value.date.strftime("%A, %d %b %Y")}}'
+    ```
+
+    <Tip>
+      After editing `configuration.yaml`, restart Home Assistant or call **Developer Tools** → **YAML** → **Reload** to apply changes.
+    </Tip>
+  </Tab>
+</Tabs>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Configuration reference" icon="sliders" href="/configuration/sources">
+    All source and sensor parameters explained
+  </Card>
+  <Card title="Supported providers" icon="globe" href="/providers/overview">
+    Find your provider and its required arguments
+  </Card>
+  <Card title="Templates guide" icon="code" href="/guides/templates">
+    Format sensor state with Jinja2 templates
+  </Card>
+  <Card title="Lovelace cards" icon="table-columns" href="/guides/lovelace-cards">
+    Display collection dates on your dashboard
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

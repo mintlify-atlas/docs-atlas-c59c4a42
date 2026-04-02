@@ -1,0 +1,155 @@
+---
+title: "Lovelace cards"
+description: "Display waste collection schedules on your Home Assistant dashboard using built-in and custom cards."
+---
+
+Waste collection sensors work with any standard Home Assistant dashboard card. This guide covers common patterns from a basic entity card to advanced custom cards with color coding.
+
+## Basic entity card
+
+The simplest way to display a sensor is with the built-in entity card:
+
+```yaml
+type: entity
+entity: sensor.next_collection
+```
+
+The card shows the sensor state, which you control with `value_template`. See [Templates](/guides/templates) for formatting options.
+
+## Button Card
+
+[Button Card](https://github.com/custom-cards/button-card) is a popular custom card that supports conditional colors and JavaScript expressions. You can use it to show the waste type, date, and a color that changes based on how soon the collection is.
+
+<Steps>
+  <Step title="Configure the sensor">
+
+Set up a pipe-delimited `value_template` so the card can split out individual fields:
+
+```yaml
+# configuration.yaml
+sensor:
+  - platform: waste_collection_schedule
+    name: MyButtonCardSensor
+    value_template: '{{value.types|join(", ")}}|{{value.daysTo}}|{{value.date.strftime("%d.%m.%Y")}}|{{value.date.strftime("%a")}}'
+```
+
+  </Step>
+  <Step title="Add the card to your dashboard">
+
+```yaml
+# button-card configuration
+type: 'custom:button-card'
+entity: sensor.mybuttoncardsensor
+layout: icon_name_state2nd
+show_label: true
+label: |
+  [[[
+    var days_to = entity.state.split("|")[1]
+    if (days_to == 0)
+    { return "Today" }
+    else if (days_to == 1)
+    { return "Tomorrow" }
+    else
+    { return "in " + days_to + " days" }
+  ]]]
+show_name: true
+name: |
+  [[[
+    return entity.state.split("|")[0]
+  ]]]
+state:
+  - color: red
+    operator: template
+    value: '[[[ return entity.state.split("|")[1] == 0 ]]]'
+  - color: orange
+    operator: template
+    value: '[[[ return entity.state.split("|")[1] == 1 ]]]'
+  - value: default
+```
+
+  </Step>
+</Steps>
+
+The card turns **red** when collection is today, **orange** when it's tomorrow, and uses the default color otherwise.
+
+## Garbage Collection Card
+
+[Garbage Collection Card](https://github.com/amaximus/garbage-collection-card) is a community card purpose-built for waste schedules.
+
+<Steps>
+  <Step title="Configure the sensor">
+
+```yaml
+# configuration.yaml
+sensor:
+  - platform: waste_collection_schedule
+    name: garbage_days
+    details_format: appointment_types
+    value_template: "{{ value.daysTo }}"
+    types:
+      - Garbage
+
+  - platform: template
+    sensors:
+      garbage:
+        value_template: >
+          {% if states('sensor.garbage_days')|int > 2 %}
+            2
+          {% else %}
+            {{ states('sensor.garbage_days')|int }}
+          {% endif %}
+        attribute_templates:
+          next_date: "{{ state_attr('sensor.garbage_days', 'Garbage') }}"
+          days: "{{ states('sensor.garbage_days')|int }}"
+```
+
+  </Step>
+  <Step title="Add the card to your dashboard">
+
+```yaml
+# garbage-collection-card configuration
+entity: sensor.garbage
+type: 'custom:garbage-collection-card'
+```
+
+  </Step>
+</Steps>
+
+## Sorting sensors by next collection date
+
+If you have a dedicated sensor per waste type, you can sort them by how soon the next collection is using [auto-entities](https://github.com/thomasloven/lovelace-auto-entities).
+
+Add `add_days_to: true` to each sensor you want to sort:
+
+```yaml
+sensor:
+  - platform: waste_collection_schedule
+    name: next_garbage
+    types:
+      - Garbage
+    add_days_to: true
+
+  - platform: waste_collection_schedule
+    name: next_recycle
+    types:
+      - Recycle
+    add_days_to: true
+```
+
+This adds a `daysTo` attribute to each sensor. You can then configure auto-entities to sort by that attribute:
+
+```yaml
+type: custom:auto-entities
+card:
+  type: entities
+filter:
+  include:
+    - entity_id: sensor.next_*
+sort:
+  method: attribute
+  attribute: daysTo
+```
+
+<Tip>
+Use `event_index` sensors to display the next, second, and third upcoming collections as separate cards, giving you a multi-event view without needing additional sources. See [Templates — event_index](/guides/templates#sensors-for-first-second-and-third-upcoming-collection) for the configuration.
+</Tip>

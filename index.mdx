@@ -1,97 +1,53 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Waste Collection Schedule"
+description: "Home Assistant integration for 600+ waste collection service providers worldwide — automatic calendar sync, flexible sensors, and easy setup."
 ---
 
-## Setting up
-
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install via HACS or manually copy files to your Home Assistant config
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Set up your first source and sensor in a few minutes
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Supported Providers" icon="globe" href="/providers/overview">
+    Browse 600+ supported waste collection providers across 20+ countries
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Configuration" icon="sliders" href="/configuration/sources">
+    Full reference for sources, sensors, and customization options
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Get started
 
-Everything you need to create world-class documentation.
+<Steps>
+  <Step title="Install the integration">
+    Install Waste Collection Schedule via [HACS](/installation#automated-installation-using-hacs) (recommended) or [manually](/installation#manual-installation).
+  </Step>
+  <Step title="Find your provider">
+    Check the [supported providers list](/providers/overview) for your country and waste management company.
+  </Step>
+  <Step title="Configure a source">
+    Add your provider as a source via the Home Assistant Integrations UI or in `configuration.yaml`.
+  </Step>
+  <Step title="Add sensors">
+    Create sensors to display next collection dates on your dashboard or trigger automations.
+  </Step>
+</Steps>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## Guides
 
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<CardGroup cols={2}>
+  <Card title="Sensor templates" icon="code" href="/guides/templates">
+    Format sensor states with Jinja2 — show dates, countdowns, and waste types
+  </Card>
+  <Card title="Calendar integration" icon="calendar" href="/guides/calendar">
+    How the Home Assistant Calendar is automatically populated
+  </Card>
+  <Card title="Lovelace cards" icon="table-columns" href="/guides/lovelace-cards">
+    Display collection schedules on your dashboard
+  </Card>
+  <Card title="Multiple sources" icon="layer-group" href="/guides/multiple-sources">
+    Combine data from several providers into one sensor or calendar
+  </Card>
+</CardGroup>

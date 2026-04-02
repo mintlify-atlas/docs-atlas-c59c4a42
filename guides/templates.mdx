@@ -1,0 +1,139 @@
+---
+title: "Templates"
+description: "Use Jinja2 templates to control how sensor state values and dates are displayed in Home Assistant."
+---
+
+Sensors expose collection data through two template parameters: `value_template` and `date_template`. Both use standard [Jinja2](https://jinja.palletsprojects.com/) syntax and have access to a `value` object that represents the next scheduled collection.
+
+## Template variables
+
+| Variable | Type | Description |
+|---|---|---|
+| `value.date` | `datetime.date` | The collection date. Use [strftime](https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior) to format the output. |
+| `value.daysTo` | `int` | Days until collection. `0` = today, `1` = tomorrow, etc. |
+| `value.types` | `list[str]` | Waste types scheduled on that date. Use the `join` filter to combine them. |
+
+## value_template examples
+
+`value_template` controls the sensor's state — the value shown on dashboard cards and used in automations.
+
+<AccordionGroup>
+  <Accordion title="Show waste types">
+
+```yaml
+# Returns "Garbage, Recycle"
+value_template: '{{value.types|join(", ")}}'
+
+# Returns "Garbage+Recycle"
+value_template: '{{value.types|join("+")}}'
+```
+
+<Note>If you don't specify a `value_template`, waste types are joined using the `separator` configuration variable (default: `", "`).</Note>
+
+  </Accordion>
+
+  <Accordion title="Show days countdown">
+
+```yaml
+# Returns "in 3 days"
+value_template: 'in {{value.daysTo}} days'
+
+# Returns just the number
+value_template: '{{value.daysTo}}'
+```
+
+  </Accordion>
+
+  <Accordion title="Show today / tomorrow / in X days">
+
+```yaml
+# Returns "Today" if value.daysTo == 0
+# Returns "Tomorrow" if value.daysTo == 1
+# Returns "in X days" if value.daysTo > 1
+value_template: >
+  {% if value.daysTo == 0 %}Today
+  {% elif value.daysTo == 1 %}Tomorrow
+  {% else %}in {{value.daysTo}} days{% endif %}
+```
+
+  </Accordion>
+
+  <Accordion title="Show only the date">
+
+```yaml
+# Returns "03/20/2020"
+value_template: '{{value.date.strftime("%m/%d/%Y")}}'
+```
+
+  </Accordion>
+
+  <Accordion title="Combine type, date, and days">
+
+```yaml
+# Returns "Garbage, Recycle on Fri, 20.03.2020"
+value_template: '{{value.types|join(", ")}} on {{value.date.strftime("%a, %d.%m.%Y")}}'
+
+# Multi-field pipe-delimited string for use with Button Card
+value_template: '{{value.types|join(", ")}}|{{value.daysTo}}|{{value.date.strftime("%d.%m.%Y")}}|{{value.date.strftime("%a")}}'
+```
+
+  </Accordion>
+</AccordionGroup>
+
+## date_template examples
+
+`date_template` controls how dates appear in the **More Info** popup for the entity. It accepts the same `value` variables as `value_template`.
+
+<AccordionGroup>
+  <Accordion title="Format dates with strftime">
+
+```yaml
+# Returns "20.03.2020"
+date_template: '{{value.date.strftime("%d.%m.%Y")}}'
+
+# Returns "03/20/2020"
+date_template: '{{value.date.strftime("%m/%d/%Y")}}'
+
+# Returns "Fri, 03/20/2020"
+date_template: '{{value.date.strftime("%a, %m/%d/%Y")}}'
+```
+
+  </Accordion>
+</AccordionGroup>
+
+## Full sensor configuration example
+
+```yaml
+sensor:
+  - platform: waste_collection_schedule
+    name: next_collection
+    value_template: >
+      {% if value.daysTo == 0 %}Today
+      {% elif value.daysTo == 1 %}Tomorrow
+      {% else %}in {{value.daysTo}} days{% endif %}
+    date_template: '{{value.date.strftime("%d.%m.%Y")}}'
+```
+
+## Sensors for first, second, and third upcoming collection
+
+Use `event_index` to create separate sensors for the next, second, and third collection events.
+
+```yaml
+sensor:
+  - platform: waste_collection_schedule
+    name: first_garbage_collection
+    event_index: 0
+    value_template: '{{value.types|join(", ")}} in {{ value.daysTo }} days'
+
+  - platform: waste_collection_schedule
+    name: second_garbage_collection
+    event_index: 1
+    value_template: '{{value.types|join(", ")}} in {{ value.daysTo }} days'
+
+  - platform: waste_collection_schedule
+    name: third_garbage_collection
+    event_index: 2
+    value_template: '{{value.types|join(", ")}} in {{ value.daysTo }} days'
+```
+
+`event_index: 0` is the default and refers to the next upcoming collection. Higher indexes refer to later events.

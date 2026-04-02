@@ -1,0 +1,183 @@
+---
+title: "Testing"
+description: "How to run test_sources.py to validate your source script or ICS configuration before submitting a pull request."
+---
+
+The framework includes a command-line test script at:
+
+```
+custom_components/waste_collection_schedule/waste_collection_schedule/test/test_sources.py
+```
+
+The script iterates through the `TEST_CASES` defined in a source script (or the `test_cases` in an ICS YAML file), passes each set of arguments to the source, and prints the number of entries found per test case. It makes real network requests, so it confirms your source actually works against the live provider.
+
+<Note>
+  `test_sources.py` is separate from `pytest`. See [Running pytest](#running-pytest) at the bottom of this page for the difference.
+</Note>
+
+## Available options
+
+| Option | Argument | Description |
+|--------|----------|-------------|
+| `-s` | `SOURCE` | Test a single Python source by name (file name without `.py`). |
+| `-l` | — | List all found collection dates in the output. |
+| `-i` | — | Include icon names in the output. Only effective with `-l`. |
+| `-t` | — | Show extended exception info and stack trace on errors. |
+| `-d` | — | Run `fetch()` twice and check whether the results differ. Use this if your `fetch()` method modifies the `Source` object's state. |
+| `-I` | — | Test all ICS YAML files in `/doc/ics/yaml`. |
+| `-y` | `YAML` | Test a single ICS YAML file by name (file name without `.yaml`). |
+
+If you run the script with no arguments it tests every Python source in the `source/` folder and every YAML file in `/doc/ics/yaml` and prints a summary.
+
+## Testing a Python source
+
+<Steps>
+  <Step title="Navigate to the test directory">
+    ```bash
+    cd custom_components/waste_collection_schedule/waste_collection_schedule/test/
+    ```
+  </Step>
+
+  <Step title="Run the test script against your source">
+    Pass the source file name (without `.py`) using the `-s` flag:
+
+    ```bash
+    python test_sources.py -s abfall_io
+    ```
+
+    Expected output:
+
+    ```text
+    Testing source abfall_io ...
+      found 285 entries for Waldenbuch
+      found 58 entries for Landshut
+      found 109 entries for Schoenmackers
+      found 3 entries for Freudenstadt
+      found 211 entries for Ludwigshafen am Rhein
+      found 119 entries for Traunstein
+      found 287 entries for Thalheim
+    ```
+
+    Each line corresponds to one entry in the source's `TEST_CASES` dictionary.
+  </Step>
+
+  <Step title="List individual dates and icons">
+    To inspect the actual collection entries returned, add `-l`. To also see the icon assigned to each entry, add `-i`:
+
+    ```bash
+    python test_sources.py -s richmondshire_gov_uk -i -l
+    ```
+
+    ```text
+    Testing source richmondshire_gov_uk ...
+      found 53 entries for test 1
+        2023-01-02: 240L GREY RUBBISH BIN [mdi:trash-can]
+        2023-01-07: 55L RECYCLING BOX [mdi:recycle]
+        2023-01-13: 240L GREY RUBBISH BIN [mdi:trash-can]
+        2023-01-20: 55L RECYCLING BOX [mdi:recycle]
+        2023-01-27: 240L GREY RUBBISH BIN [mdi:trash-can]
+        ...
+        2023-12-01: 240L GREY RUBBISH BIN [mdi:trash-can]
+        2023-12-08: 55L RECYCLING BOX [mdi:recycle]
+        2023-12-15: 240L GREY RUBBISH BIN [mdi:trash-can]
+    ```
+  </Step>
+</Steps>
+
+## Testing an ICS YAML configuration
+
+<Steps>
+  <Step title="Navigate to the test directory">
+    ```bash
+    cd custom_components/waste_collection_schedule/waste_collection_schedule/test/
+    ```
+  </Step>
+
+  <Step title="Run the test script against your YAML file">
+    Pass the YAML file name (without `.yaml`) using the `-y` flag:
+
+    ```bash
+    python test_sources.py -y koblenz_de
+    ```
+
+    Expected output:
+
+    ```text
+    Testing ICS koblenz_de
+      found 60 entries for Altstadt
+    ```
+  </Step>
+
+  <Step title="List individual dates">
+    Add the `-l` flag to see the individual entries returned:
+
+    ```bash
+    python test_sources.py -y koblenz_de -l
+    ```
+
+    ```text
+    Testing ICS koblenz_de
+      found 60 entries for Altstadt
+        2023-04-19 : Altpapier
+        2023-05-10 : Altpapier
+        2023-06-01 : Altpapier
+        2023-06-21 : Altpapier
+        2023-07-12 : Altpapier
+        ...
+    ```
+  </Step>
+
+  <Step title="Test all ICS YAML files at once">
+    Use the `-I` flag to run against every YAML file in the `/doc/ics/yaml` folder:
+
+    ```bash
+    python test_sources.py -I
+    ```
+  </Step>
+</Steps>
+
+## Common test commands
+
+<CodeGroup>
+
+```bash Test a Python source
+python test_sources.py -s your_source_name
+```
+
+```bash Test a Python source with dates and icons
+python test_sources.py -s your_source_name -i -l
+```
+
+```bash Test a Python source with stack traces on error
+python test_sources.py -s your_source_name -t
+```
+
+```bash Test an ICS YAML file
+python test_sources.py -y your_yaml_name
+```
+
+```bash Test an ICS YAML file with dates listed
+python test_sources.py -y your_yaml_name -l
+```
+
+```bash Test all ICS YAML files
+python test_sources.py -I
+```
+
+</CodeGroup>
+
+## Running pytest
+
+Before submitting a pull request, also run `pytest` from the repository root:
+
+```bash
+pytest
+```
+
+pytest is **not** the same as `test_sources.py`. It does not execute your source script or make network requests. Instead it validates:
+
+- All required module-level attributes (`TITLE`, `URL`, `TEST_CASES`) are present and correctly typed.
+- All required files exist (the `.py` source, the `.md` documentation file).
+- `update_docu_links.py` runs to completion without errors.
+
+Both `test_sources.py` and `pytest` must pass before your pull request is ready to merge.

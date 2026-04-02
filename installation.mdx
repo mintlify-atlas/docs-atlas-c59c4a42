@@ -1,0 +1,72 @@
+---
+title: "Installation"
+description: "Install the Waste Collection Schedule integration into Home Assistant via HACS or manually."
+---
+
+<Note>
+  Installing via HACS is the recommended approach. HACS automatically notifies you of updates and handles future upgrades.
+</Note>
+
+## Automated installation via HACS
+
+[HACS](https://hacs.xyz/) (Home Assistant Community Store) is the easiest way to install and keep Waste Collection Schedule up to date.
+
+<Steps>
+  <Step title="Open HACS in Home Assistant">
+    In your Home Assistant sidebar, click **HACS** to open the HACS panel.
+  </Step>
+  <Step title="Browse integrations">
+    Click **Integrations**, then click **Explore & Download Repositories**.
+  </Step>
+  <Step title="Find Waste Collection Schedule">
+    Search for `Waste Collection Schedule` and click the entry in the results.
+  </Step>
+  <Step title="Download the integration">
+    Click **Download**. HACS copies the integration files to your `config/custom_components/` directory.
+  </Step>
+  <Step title="Restart Home Assistant">
+    Restart Home Assistant so it picks up the new integration files. Go to **Settings** → **System** → **Restart**.
+  </Step>
+</Steps>
+
+## Manual installation
+
+If you prefer not to use HACS, you can copy the integration files directly.
+
+<Steps>
+  <Step title="Download the source">
+    Go to the [hacs_waste_collection_schedule repository](https://github.com/mampfes/hacs_waste_collection_schedule) on GitHub and download or clone the repository.
+  </Step>
+  <Step title="Copy the integration folder">
+    Copy the `custom_components/waste_collection_schedule` folder (including all files and subdirectories) into your Home Assistant `config/custom_components/` directory.
+
+    Your directory structure should look like this:
+
+    ```
+    config/
+    └── custom_components/
+        └── waste_collection_schedule/
+            ├── manifest.json
+            ├── __init__.py
+            ├── sensor.py
+            ├── calendar.py
+            └── ...
+    ```
+  </Step>
+  <Step title="Restart Home Assistant">
+    Restart Home Assistant so it discovers the new integration. Go to **Settings** → **System** → **Restart**.
+  </Step>
+</Steps>
+
+## After installation
+
+Once Home Assistant has restarted, the integration is ready to configure. Head to the [Quickstart](/quickstart) guide to add your first waste collection source and create your first sensor.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Configure your first source and sensor
+  </Card>
+  <Card title="Configuration reference" icon="sliders" href="/configuration/sources">
+    Full YAML and GUI configuration options
+  </Card>
+</CardGroup>

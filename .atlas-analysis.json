@@ -1,0 +1,96 @@
+{
+  "projectType": "framework",
+  "projectName": "Waste Collection Schedule",
+  "projectDescription": "A Home Assistant custom integration framework that retrieves waste collection schedules from 600+ service providers worldwide and displays them as sensors and calendar entities.",
+  "theme": "maple",
+  "primaryColor": "#663ebc",
+  "lightColor": "#b49cdc",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/sources",
+              "configuration/sensors",
+              "configuration/customize"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/templates",
+              "guides/calendar",
+              "guides/lovelace-cards",
+              "guides/multiple-sources",
+              "guides/faq"
+            ]
+          },
+          {
+            "group": "Supported Providers",
+            "pages": [
+              "providers/overview",
+              "providers/ics-ical",
+              "providers/static"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Contributing",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "contributing/overview",
+              "contributing/setup"
+            ]
+          },
+          {
+            "group": "Adding Sources",
+            "pages": [
+              "contributing/ics-source",
+              "contributing/dedicated-source",
+              "contributing/testing"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Supports 600+ waste collection service providers across 20+ countries",
+    "GUI configuration via Home Assistant Integrations UI (since v2.0.0)",
+    "YAML configuration for advanced setups",
+    "Automatic Home Assistant Calendar integration",
+    "Flexible sensor templates for custom display formatting",
+    "Support for generic ICS/iCal files and user-specified dates",
+    "Customizable waste types with aliases, icons, and visibility",
+    "Dedicated per-waste-type calendar entities",
+    "HACS (Home Assistant Community Store) compatible",
+    "Extensible plugin architecture for adding new service providers"
+  ],
+  "publicApiSurface": [
+    "Collection(date, t, icon, picture) — core data class returned by source scripts",
+    "CollectionBase — base class for collection data objects",
+    "CollectionGroup — grouped collection for same-day events",
+    "CollectionAggregator — aggregates and filters collections from multiple sources",
+    "SourceShell — wraps source scripts and applies customization",
+    "Customize — configuration object for waste type customization",
+    "Source.fetch() -> list[Collection] — interface all source scripts must implement",
+    "waste_collection_schedule.fetch_data — Home Assistant service to manually trigger updates",
+    "sensor platform: waste_collection_schedule — HA sensor platform",
+    "calendar platform: waste_collection_schedule — HA calendar platform"
+  ]
+}

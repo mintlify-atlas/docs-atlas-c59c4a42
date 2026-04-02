@@ -1,0 +1,138 @@
+---
+title: "Add an ICS source"
+description: "Add support for a new waste collection provider using the generic ICS approach — no Python required."
+---
+
+The generic ICS source is the **preferred way** to add a new provider. Use it when the provider offers one of the following:
+
+- An iCal/webcal subscription link
+- A static URL to an `.ics` file that does not change over time
+
+If neither applies — for example, the provider only has an HTML page or a dynamic API — you need a [dedicated Python source](/contributing/dedicated-source) instead.
+
+## Required files
+
+Adding an ICS-based provider requires creating one file. The rest are generated automatically:
+
+<Steps>
+  <Step title="Create the YAML configuration file">
+    Create a new file in the `/doc/ics/yaml` folder. The file name should be the provider's URL in lowercase with dots replaced by underscores, for example `abc_com.yaml` for `https://www.abc.com`.
+
+    The file must follow this structure:
+
+    ```yaml
+    title: TITLE
+    url: URL
+    country: COUNTRY
+    howto: HOWTO
+    test_cases: TEST_CASES
+    ```
+
+    ### Fields
+
+    <ParamField path="title" type="string" required>
+      The display name of the service provider. Used as the link title in `README.md` and `info.md`.
+    </ParamField>
+
+    <ParamField path="url" type="string" required>
+      The homepage URL of the service provider. The abbreviated domain is displayed next to the title in `README.md` to help users identify their provider.
+    </ParamField>
+
+    <ParamField path="country" type="string">
+      Optional. Overrides the country code that would otherwise be derived from the YAML file name. Use a two-letter ISO country code.
+    </ParamField>
+
+    <ParamField path="howto" type="object" required>
+      A dictionary mapping language codes (e.g. `en`, `de`) to multi-line Markdown strings that describe how to obtain the ICS URL from the provider's website.
+    </ParamField>
+
+    <ParamField path="test_cases" type="object" required>
+      A dictionary of test cases. Each key is a human-readable test name. Each value is a dictionary of source arguments (at minimum a `url` key pointing to a working ICS feed).
+    </ParamField>
+
+    ### Example
+
+    ```yaml
+    title: Entsorgungsgesellschaft Görlitz-Löbau-Zittau
+    url: https://www.abfall-eglz.de
+    howto:
+      en: |
+          - Go to <https://www.abfall-eglz.de/abfallkalender.html> and select your municipality.
+          - Right-click on `Entsorgungstermine als iCalendar herunterladen` and copy link address.
+          - Replace the `url` in the example configuration with this link.
+      de: |
+          - Gehen Sie zu <https://www.abfall-eglz.de/abfallkalender.html> und wählen Sie Ihre Gemeinde aus.
+          - Klicken Sie mit der rechten Maustaste auf `Entsorgungstermine als iCalendar herunterladen` und kopieren Sie den Link.
+          - Ersetzen Sie die `url` in der Beispielkonfiguration durch diesen Link.
+    test_cases:
+      Oppach:
+        url: "https://www.abfall-eglz.de/abfallkalender.html?ort=Oppach&ortsteil=Ort+Oppach&strasse=&ics=1"
+        split_at: " & "
+    ```
+
+    The `split_at` field in a test case is an optional ICS source argument that splits combined event summaries into individual collection types.
+  </Step>
+
+  <Step title="Generate the markdown file and update README">
+    Run `update_docu_links.py` from the repository root. This script reads all YAML files and automatically:
+
+    - Generates the service provider markdown file in `doc/source/`
+    - Updates `README.md` with a link to the new provider
+    - Updates `info.md` with the new provider entry
+
+    ```bash
+    ./update_docu_links.py
+    ```
+
+    You do not need to create the markdown file manually — it is fully generated from the YAML.
+  </Step>
+
+  <Step title="Test the new ICS configuration">
+    Navigate to the test directory and run the test script with the `-y` option, passing the YAML file name without the `.yaml` extension:
+
+    ```bash
+    cd custom_components/waste_collection_schedule/waste_collection_schedule/test/
+    python test_sources.py -y koblenz_de
+    ```
+
+    Expected output:
+
+    ```text
+    Testing ICS koblenz_de
+      found 60 entries for Altstadt
+    ```
+
+    To see individual collection dates, add the `-l` flag:
+
+    ```bash
+    python test_sources.py -y koblenz_de -l
+    ```
+
+    ```text
+    Testing ICS koblenz_de
+      found 60 entries for Altstadt
+        2023-04-19 : Altpapier
+        2023-05-10 : Altpapier
+        2023-06-01 : Altpapier
+        2023-06-21 : Altpapier
+        2023-07-12 : Altpapier
+        ...
+    ```
+
+    Replace `koblenz_de` with the name of your YAML file.
+  </Step>
+
+  <Step title="Run pytest">
+    Before submitting your pull request, run the full test suite from the repository root:
+
+    ```bash
+    pytest
+    ```
+
+    This checks that all attributes are set correctly, all required files are present, and `update_docu_links.py` completes without errors.
+  </Step>
+</Steps>
+
+<Tip>
+  For a full list of `test_sources.py` options — including how to test all YAML files at once — see the [Testing](/contributing/testing) page.
+</Tip>

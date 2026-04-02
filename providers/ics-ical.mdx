@@ -1,0 +1,230 @@
+---
+title: 'ICS / iCal source'
+description: 'Connect any waste collection provider that publishes an ICS or iCal calendar feed by pointing the generic ICS source at the URL or local file.'
+---
+
+The `ics` source parses ICS/iCal calendar data and maps each calendar event to a waste collection entry. The waste type is read from the event's `summary` field.
+
+You can use this source with:
+
+- A URL pointing to a remotely hosted `.ics` file or calendar subscription
+- A local `.ics` file stored on your Home Assistant instance
+
+This source has been tested with dozens of providers across Australia, Austria, Belgium, Canada, Czech Republic, Denmark, Germany, Italy, Luxembourg, Netherlands, Norway, Switzerland, the United Kingdom, the United States, and more. See the [full tested provider list](https://github.com/mampfes/hacs_waste_collection_schedule/blob/master/doc/source/ics.md) in the GitHub repository.
+
+## How to find your ICS URL
+
+<Steps>
+  <Step title="Visit your provider's website">
+    Look for options labeled "add to calendar", "subscribe", "iCal export", or "calendar feed" on your provider's collection schedule page.
+  </Step>
+  <Step title="Copy the subscription link">
+    Right-click the calendar link and copy the URL. It typically ends in `.ics` or contains `ical` in the path.
+  </Step>
+  <Step title="Paste the URL into your configuration">
+    Use the URL as the value for the `url` argument in the source configuration below.
+  </Step>
+</Steps>
+
+<Tip>
+If the URL contains the current year (e.g. `2024`), replace the year with the wildcard `{%Y}` so the integration automatically uses the correct year as it changes.
+</Tip>
+
+## Configuration
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: ics
+      args:
+        url: URL
+        file: FILE
+        offset: OFFSET
+        method: METHOD
+        params: PARAMS
+        year_field: YEAR_FIELD
+        regex: REGEX
+        split_at: SPLIT_AT
+        verify_ssl: VERIFY_SSL
+        headers: HEADERS
+        title_template: "{{date.summary}}"
+```
+
+### Parameters
+
+<ParamField path="url" type="string">
+  URL of the ICS/iCal file. The file is fetched with an HTTP GET request by default.
+
+  If the URL contains the current year as a four-digit value (e.g. `2024`), replace it with `{%Y}` to have the integration substitute the correct year automatically.
+
+  You must specify either `url` or `file`, but not both.
+</ParamField>
+
+<ParamField path="file" type="string">
+  Path to a local ICS/iCal file. Use this instead of `url` when you have a file stored on your Home Assistant host.
+
+  You must specify either `url` or `file`, but not both.
+
+  <Note>
+  Some installations only allow access to files under `config/www`. Place your `.ics` file there and reference it as `www/calendar.ics`. The log output shows the current working directory if you are unsure of relative path resolution.
+  </Note>
+</ParamField>
+
+<ParamField path="offset" type="number" default="0">
+  Number of days to add to every event's date. Use this if your provider's calendar events are dated ahead of the actual collection date.
+</ParamField>
+
+<ParamField path="method" type="string" default="GET">
+  HTTP method used to fetch the URL. Must be `GET` or `POST`. Only applies when `url` is set.
+</ParamField>
+
+<ParamField path="params" type="object">
+  Dictionary or list of key-value pairs sent as request parameters.
+
+  - With `GET`: appended to the URL as a query string.
+  - With `POST`: sent as a `application/x-www-form-urlencoded` body.
+
+  Only applies when `url` is set.
+</ParamField>
+
+<ParamField path="year_field" type="string">
+  Key within `params` whose value should be replaced with the current four-digit year. Use this when a POST request requires a year parameter.
+</ParamField>
+
+<ParamField path="regex" type="string">
+  Regular expression applied to each event summary to extract the waste collection type. The first capture group is used as the type name.
+
+  Useful when summaries include extra text such as prefixes or suffixes you want to strip.
+</ParamField>
+
+<ParamField path="split_at" type="string">
+  Delimiter string used to split a single event summary into multiple collection types. Use this when a provider combines several waste types into one calendar event.
+</ParamField>
+
+<ParamField path="verify_ssl" type="boolean" default="true">
+  Set to `false` to disable SSL certificate verification. Use this only if you see the following error in the logs:
+
+  `[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate`
+
+  This error occurs when the provider's HTTPS server does not send intermediate certificates.
+</ParamField>
+
+<ParamField path="headers" type="object">
+  Dictionary of custom HTTP headers to include in the request. The `user-agent` header is already set to `Mozilla/5.0 (Windows NT 10.0; Win64; x64)` by default.
+
+  Use this to supply a `referer` header when the provider's server requires it.
+</ParamField>
+
+<ParamField path="title_template" type="string" default="{{date.summary}}">
+  Jinja2 template string used to format the collection type name. `date` refers to the parsed ICS event object. The default uses the event summary directly.
+</ParamField>
+
+<ParamField path="version" type="integer">
+  Deprecated. No longer has any effect; kept for backwards compatibility only. You can safely omit this parameter.
+</ParamField>
+
+## Examples
+
+### Fetch a calendar from a URL
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: ics
+      args:
+        url: "https://www.example-provider.com/calendar/2024.ics"
+```
+
+### URL with automatic year substitution
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: ics
+      args:
+        url: "https://www.example-provider.com/calendar/{%Y}.ics"
+```
+
+### Local file
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: ics
+      args:
+        file: "www/calendar.ics"
+```
+
+### Strip a prefix from event summaries
+
+The following strips the `Abfuhr: ` prefix that appears in some German provider calendars, leaving just the waste type name.
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: ics
+      args:
+        file: waste.ics
+        regex: "Abfuhr: (.*)"
+```
+
+### Split combined events into individual types
+
+Use `split_at` when a single calendar event lists multiple collection types in one summary.
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: ics
+      args:
+        url: "https://www.fes-frankfurt.de/abfallkalender/<your-id>.ics"
+        split_at: " \/ "
+        regex: "(.*)\\s+\\|"
+```
+
+### Custom request headers
+
+Some providers require a `referer` header; without it the server returns HTTP 403.
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: ics
+      args:
+        url: "https://aik.ilm-kreis.de/output/options.php?ModID=48&call=ical&pois=3053.562"
+        headers:
+          referer: "https://aik.ilm-kreis.de"
+```
+
+### POST request with parameters
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: ics
+      args:
+        url: "https://sperrmuell.erlensee.de/?type=reminder"
+        method: "POST"
+        params:
+          street: 8
+          eventType[]:
+            - 27
+            - 23
+          timeframe: 23
+          download: "ical"
+```
+
+### Disable SSL verification
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: ics
+      args:
+        url: "https://www.example-provider.com/calendar.ics"
+        verify_ssl: false
+```
+
+<Warning>
+Only disable SSL verification as a last resort. It removes the guarantee that you are communicating with the intended server.
+</Warning>

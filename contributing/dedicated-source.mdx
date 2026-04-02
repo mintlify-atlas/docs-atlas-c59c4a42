@@ -1,0 +1,307 @@
+---
+title: "Add a dedicated source"
+description: "Add support for a new waste collection provider by writing a Python source script that scrapes or calls an API."
+---
+
+Use a dedicated Python source when the provider does not offer an ICS/iCal feed. This approach requires writing a Python script that fetches data from the provider's website or API and returns it as a list of `Collection` objects.
+
+If the provider does offer an ICS feed, use the [ICS source approach](/contributing/ics-source) instead — it requires no Python.
+
+## Required files
+
+Adding a dedicated source requires creating two files, and running a script to update two more automatically:
+
+| File | Created by |
+|------|------------|
+| `custom_components/waste_collection_schedule/waste_collection_schedule/source/<name>.py` | You |
+| `doc/source/<name>.md` | You |
+| `README.md` | `update_docu_links.py` |
+| `info.md` | `update_docu_links.py` |
+
+<Steps>
+  <Step title="Create the Python source script">
+    Create a new file in the `custom_components/waste_collection_schedule/waste_collection_schedule/source/` folder. Name the file after the provider's URL in lowercase with dots replaced by underscores, for example `abc_com.py` for `https://www.abc.com`.
+
+    Use the following template as your starting point:
+
+    ```python
+    import datetime
+    from waste_collection_schedule import Collection  # type: ignore[attr-defined]
+
+    TITLE = "My Council"  # Displayed in README.md and info.md
+    DESCRIPTION = "Source script for abc.com"
+    URL = "https://abc.com"  # Provider homepage, displayed in README.md and info.md
+    TEST_CASES = {  # Arguments passed to each test case by test_sources.py
+        "TestName1": {"arg1": 100, "arg2": "street"},
+        "TestName2": {"arg1": 200, "arg2": "road"},
+        "TestName3": {"arg1": 300, "arg2": "lane"},
+    }
+
+    API_URL = "https://abc.com/search/"
+
+    ICON_MAP = {   # Optional: map waste type names to mdi icons
+        "DOMESTIC": "mdi:trash-can",
+        "RECYCLE": "mdi:recycle",
+        "ORGANIC": "mdi:leaf",
+    }
+
+    #### Arguments affecting the configuration GUI ####
+
+    HOW_TO_GET_ARGUMENTS_DESCRIPTION = {  # Optional: shown above input fields in the GUI
+        "en": "HOW TO GET ARGUMENTS DESCRIPTION",
+        "de": "WIE MAN DIE ARGUMENTE ERHÄLT",
+        "it": "COME OTTENERE GLI ARGOMENTI",
+        "fr": "COMMENT OBTENIR LES ARGUMENTS",
+    }
+
+    PARAM_DESCRIPTIONS = {  # Optional: shown below each input field in the GUI
+        "en": {
+            "arg1": "Description of ARG1",
+            "arg2": "Description of ARG2",
+        },
+        "de": {
+            "arg1": "Beschreibung von ARG1",
+            "arg2": "Beschreibung von ARG2",
+        },
+        "it": {
+            "arg1": "Descrizione di ARG1",
+            "arg2": "Descrizione di ARG2",
+        },
+        "fr": {
+            "arg1": "Description de ARG1",
+            "arg2": "Description de ARG2",
+        },
+    }
+
+    PARAM_TRANSLATIONS = {  # Optional: placeholder text in the GUI configuration form
+        "en": {
+            "arg1": "User Readable Name for ARG1",
+            "arg2": "User Readable Name for ARG2",
+        },
+        "de": {
+            "arg1": "Benutzerfreundlicher Name für ARG1",
+            "arg2": "Benutzerfreundlicher Name für ARG2",
+        },
+        "it": {
+            "arg1": "Nome leggibile dall'utente per ARG1",
+            "arg2": "Nome leggibile dall'utente per ARG2",
+        },
+        "fr": {
+            "arg1": "Nom lisible par l'utilisateur pour ARG1",
+            "arg2": "Nom lisible par l'utilisateur pour ARG2",
+        },
+    }
+
+    #### End of arguments affecting the configuration GUI ####
+
+    class Source:
+        def __init__(self, arg1: str, arg2: int):  # matches keys in TEST_CASES dicts
+            self._arg1 = arg1
+            self._arg2 = arg2
+
+        def fetch(self) -> list[Collection]:
+            # Replace this comment with your API calls or web scraping logic.
+            # Extract collection dates and waste type names from the response.
+            if ERROR_CONDITION:
+                raise Exception("YOUR ERROR MESSAGE HERE")  # Do NOT just return []
+
+            entries = []  # Holds the collection schedule
+
+            entries.append(
+                Collection(
+                    date=datetime.date(2020, 4, 11),  # Collection date (datetime.date, not datetime.datetime)
+                    t="Waste Type",                   # Collection type / name
+                    icon=ICON_MAP.get("Waste Type"),  # Optional mdi icon
+                )
+            )
+
+            return entries
+    ```
+
+    ### The `Collection` class
+
+    Every item in the returned list must be a `Collection` instance. Its constructor accepts:
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `date` | `datetime.date` | Yes | The collection date. |
+    | `t` | `str` | Yes | The waste type or collection name shown to the user. |
+    | `icon` | `str` | No | An `mdi:` icon string (e.g. `"mdi:trash-can"`). |
+    | `picture` | `str` | No | URL to an image representing the waste type. |
+
+    ### Source script rules
+
+    Filtering by waste type or time period is the framework's responsibility, not the source script's. Follow these rules:
+
+    - Return **all** data for all available waste types — do not filter by type.
+    - Return **all** data for the entire available time period, including past dates if the provider returns them.
+    - Do **not** add configuration options to limit waste types or time frames.
+    - Raise an exception if an error occurs — do **not** return an empty list silently.
+
+    ### Module-level attributes
+
+    The `update_docu_links.py` script reads these attributes to build `README.md` and `info.md`:
+
+    <AccordionGroup>
+      <Accordion title="TITLE, URL, DESCRIPTION (required)">
+        ```python
+        TITLE = "ART Trier"
+        DESCRIPTION = "Source for art-trier.de waste collection schedule"
+        URL = "https://www.art-trier.de"
+        ```
+
+        `TITLE` and `URL` appear as a linked entry in `README.md`. `DESCRIPTION` is used in the source markdown file.
+      </Accordion>
+
+      <Accordion title="COUNTRY (optional)">
+        By default the country code is derived from the source file name (e.g. `abc_de.py` → `de`). Override it with the `COUNTRY` attribute:
+
+        ```python
+        TITLE = "RecycleSmart"
+        URL = "https://www.recyclesmart.com/"
+        COUNTRY = "au"
+        ```
+      </Accordion>
+
+      <Accordion title="EXTRA_INFO (optional)">
+        Use `EXTRA_INFO` when a single source script supports multiple distinct service providers, so each one gets its own entry in `README.md` and `info.md`.
+
+        It can be a static list of dicts:
+
+        ```python
+        TITLE = "FCC Environment"
+        URL = "https://fccenvironment.co.uk"
+        EXTRA_INFO = [
+            {
+                "title": "Harborough District Council",
+                "url": "https://harborough.gov.uk",
+                "default_params": {  # auto-filled when selected in the GUI
+                    "ARG1": "Harborough",
+                },
+            },
+            {
+                "title": "South Hams District Council",
+                "url": "https://southhams.gov.uk/",
+                "default_params": {
+                    "ARG1": "South Hams",
+                },
+            },
+        ]
+        ```
+
+        Or a callable that returns the same structure:
+
+        ```python
+        TITLE = "Bürgerportal"
+        URL = "https://www.c-trace.de"
+
+        def EXTRA_INFO():
+            return [{"title": s["title"], "url": s["url"]} for s in SERVICE_MAP]
+        ```
+
+        Each dict can contain `title`, `url`, `country`, and `default_params`. Missing keys fall back to the top-level `TITLE`, `URL`, and `COUNTRY` values.
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+
+  <Step title="Handle exceptions correctly">
+    Import exceptions from `waste_collection_schedule.exceptions` and raise them instead of generic `Exception` where possible. This lets the UI surface helpful error messages to users.
+
+    ```python
+    from waste_collection_schedule.exceptions import (
+        SourceArgumentNotFound,
+        SourceArgumentNotFoundWithSuggestions,
+        SourceArgAmbiguousWithSuggestions,
+        SourceArgumentException,
+        SourceArgumentExceptionMultiple,
+        SourceArgumentRequired,
+        SourceArgumentRequiredWithSuggestions,
+    )
+    ```
+
+    | Exception | When to raise |
+    |-----------|---------------|
+    | `SourceArgumentException` | An argument value is invalid; display the error at that specific field. |
+    | `SourceArgumentExceptionMultiple` | Multiple arguments are invalid at the same time. |
+    | `SourceArgumentNotFound` | The API returned no results for the given argument value. Do **not** raise this when a required argument is simply absent. |
+    | `SourceArgumentNotFoundWithSuggestions` | Same as above, but you can supply a list of valid alternatives. Prefer this when suggestions are available. |
+    | `SourceArgAmbiguousWithSuggestions` | The argument matched more than one result; supply suggestions so the user can narrow it down. |
+    | `SourceArgumentRequired` | A required argument was not provided by the user. |
+    | `SourceArgumentRequiredWithSuggestions` | Same as above, but with a list of valid values to choose from. |
+
+    <Warning>
+      Never silently return an empty list when an error occurs. Always raise an exception so the user knows something went wrong.
+    </Warning>
+  </Step>
+
+  <Step title="Create the service provider markdown file">
+    Create a new file in the `doc/source/` folder with the same base name as your Python script, for example `doc/source/abc_com.md`.
+
+    The markdown file should contain:
+
+    1. How to configure the source in `configuration.yaml`
+    2. A description of each argument — its type and whether it is required or optional
+    3. A working configuration example (typically one of your `TEST_CASES`)
+
+    Example structure:
+
+    ```markdown
+    ## Configuration via configuration.yaml
+
+    ```yaml
+    waste_collection_schedule:
+        sources:
+        - name: abc_com
+          args:
+            uprn: UNIQUE_PROPERTY_REFERENCE_NUMBER
+    ```
+
+    ## Configuration variables
+
+    **uprn** _(string) (required)_: The unique 12-digit identifier for your property.
+
+    ## Example
+
+    ```yaml
+    waste_collection_schedule:
+        sources:
+        - name: abc_com
+          args:
+            uprn: "e3850cac2d5b"
+    ```
+
+    Note: Your UPRN can be found on invoices from your service provider.
+    ```
+  </Step>
+
+  <Step title="Update README.md and info.md">
+    Run `update_docu_links.py` from the repository root. It reads the `TITLE`, `URL`, `COUNTRY`, and `EXTRA_INFO` attributes from your new source file and regenerates the provider lists:
+
+    ```bash
+    ./update_docu_links.py
+    ```
+
+    You do not need to edit `README.md` or `info.md` by hand.
+  </Step>
+
+  <Step title="Test your source script">
+    Navigate to the test directory and run the test script with the `-s` option, passing the source file name without the `.py` extension:
+
+    ```bash
+    cd custom_components/waste_collection_schedule/waste_collection_schedule/test/
+    python test_sources.py -s abc_com
+    ```
+
+    See the [Testing](/contributing/testing) page for full details on test options and expected output.
+  </Step>
+
+  <Step title="Run pytest">
+    Before opening a pull request, run the full test suite from the repository root:
+
+    ```bash
+    pytest
+    ```
+
+    This confirms that attributes are set correctly, all required files exist, and `update_docu_links.py` runs cleanly.
+  </Step>
+</Steps>

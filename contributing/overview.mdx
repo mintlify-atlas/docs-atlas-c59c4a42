@@ -1,0 +1,58 @@
+---
+title: "Contributing overview"
+description: "Ways to contribute to Waste Collection Schedule — from adding new service providers to improving documentation and helping the community."
+---
+
+Waste Collection Schedule is an open-source project and contributions of all kinds are welcome. Whether you want to add support for a new waste collection provider, fix a bug, improve the docs, or help other users, there is a place for you.
+
+## Ways to contribute
+
+**Add a new service provider**
+
+The most common contribution is adding support for a new waste collection service. There are two paths depending on what the provider offers:
+
+- **Generic ICS source** — the preferred approach. Use this when the provider offers an iCal/webcal subscription or a static ICS file URL.
+- **Dedicated Python source** — the fallback when ICS is not available. Requires writing a Python scraper or API client.
+
+See the cards below for a step-by-step guide for each path.
+
+**Improve the documentation**
+
+Non-code contributions are just as valuable. If you find a typo, a missing step, or a screenshot that would clarify something, submit a pull request with your changes.
+
+**Fix or report issues**
+
+Browse [open issues on GitHub](https://github.com/mampfes/hacs_waste_collection_schedule/issues) to find bugs you can help resolve. If you encounter a new problem, please open an issue with enough detail to reproduce it.
+
+**Join the community discussion**
+
+The main discussion thread lives on the [Home Assistant Community forum](https://community.home-assistant.io/t/waste-collection-schedule-framework/186492). It is a good place to ask questions, share configurations, and help other users.
+
+## Adding a new service provider
+
+When adding a new provider you will always need to:
+
+1. Fork and clone the repository, and create a new branch.
+2. Add the required files for your chosen approach (ICS config or Python source).
+3. Run `update_docu_links.py` to regenerate `README.md` and `info.md`.
+4. Run `pytest` to confirm all validation checks pass.
+5. Open a pull request with a description of the provider and test output.
+
+<Columns cols={2}>
+  <Card title="ICS source" icon="calendar" href="/contributing/ics-source">
+    Add a provider that publishes an iCal or ICS feed. YAML-only, no Python required.
+  </Card>
+  <Card title="Dedicated source" icon="code" href="/contributing/dedicated-source">
+    Add a provider that requires a custom Python scraper or API client.
+  </Card>
+</Columns>
+
+## Pull request checklist
+
+When you open a pull request, include:
+
+- The name of the service provider and its URL.
+- Confirmation that all required files have been created or updated.
+- The output of `test_sources.py` demonstrating that test cases return results.
+
+Pull requests from first-time contributors undergo a manual code review before merging.

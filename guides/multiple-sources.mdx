@@ -1,0 +1,87 @@
+---
+title: "Multiple sources"
+description: "Combine data from multiple service providers into shared sensors and calendar entities."
+---
+
+If you collect waste from more than one service provider — or need schedules for multiple districts — you can define multiple sources and combine their data into shared sensors or a single calendar entity.
+
+## Defining multiple sources
+
+Add each service provider as a separate entry under `sources`:
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: SOURCE_A
+      args:
+        arg1: value1
+      calendar_title: "Provider A"
+
+    - name: SOURCE_B
+      args:
+        arg1: value2
+      calendar_title: "Provider B"
+```
+
+Each source automatically gets its own calendar entity (`calendar.provider_a`, `calendar.provider_b`).
+
+## Combining sources into one sensor
+
+By default, a sensor reads from source index `0` (the first source). To combine data from multiple sources into a single sensor, pass a list to `source_index`:
+
+```yaml
+sensor:
+  - platform: waste_collection_schedule
+    name: all_collections
+    source_index: [0, 1]
+```
+
+Or use the list form:
+
+```yaml
+sensor:
+  - platform: waste_collection_schedule
+    name: all_collections
+    source_index:
+      - 0
+      - 1
+```
+
+The sensor will show the next upcoming collection across both sources.
+
+<Warning>
+Multi-source sensors (`source_index` as a list) are only supported in YAML configuration. The GUI does not support this feature. You also cannot mix YAML sensors with GUI-configured sources.
+</Warning>
+
+## Combining sources into one calendar entity
+
+To merge all sources into a single calendar entity, use the `multiple` wrapper source:
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: multiple
+      args:
+        sources:
+          - name: SOURCE_A
+            args:
+              arg1: value1
+          - name: SOURCE_B
+            args:
+              arg1: value2
+      calendar_title: "All Collections"
+```
+
+This creates a single `calendar.all_collections` entity containing events from both providers.
+
+<Note>
+The `multiple` wrapper source is not yet supported in the GUI. Configure it using `configuration.yaml`.
+</Note>
+
+## GUI limitations for multiple sources
+
+The following multi-source features require YAML configuration and are not available in the GUI:
+
+- Sensors that read from more than one source (`source_index` as a list)
+- The `multiple` wrapper source
+- Sensors defined in YAML that reference sources configured through the GUI (or vice versa)

@@ -1,0 +1,126 @@
+---
+title: "Sources"
+description: "Configure waste collection sources in configuration.yaml to connect Home Assistant to your service provider."
+---
+
+Sources tell Waste Collection Schedule where to fetch collection data from. Each source corresponds to a service provider (e.g., a local council website). You can define one or more sources under the `waste_collection_schedule` key in your `configuration.yaml`.
+
+## Full configuration structure
+
+```yaml configuration.yaml
+waste_collection_schedule:
+  sources:
+    - name: SOURCE_NAME
+      args:
+        arg1: value1
+        arg2: value2
+      customize:
+        - type: Residual Waste
+          alias: General Rubbish
+          show: true
+          icon: mdi:trash-can
+      day_offset: 0
+      calendar_title: My Waste Calendar
+  fetch_time: "01:00"
+  random_fetch_time_offset: 30
+  day_switch_time: "10:00"
+  separator: ", "
+```
+
+## Top-level parameters
+
+<ParamField path="sources" type="list" required>
+  One or more source definitions. Each entry in the list configures a separate service provider. If you need to fetch data from multiple providers, add multiple entries. You can also add the same provider twice with different arguments — for example, to track schedules for two different streets.
+</ParamField>
+
+<ParamField path="fetch_time" type="time" default="01:00">
+  Time of day in `HH:MM` format at which Home Assistant polls each source for the latest collection schedule. Scheduled fetches happen once per day at this time.
+</ParamField>
+
+<ParamField path="random_fetch_time_offset" type="int">
+  Randomly delays the `fetch_time` by up to this many minutes. Use this to spread fetch requests from multiple Home Assistant instances over time and reduce peak load on service provider servers.
+</ParamField>
+
+<ParamField path="day_switch_time" type="time" default="10:00">
+  Time of day in `HH:MM` format at which Home Assistant treats today's collection as finished and advances to the next scheduled collection. Collections that occurred earlier today are no longer shown as "upcoming" after this time.
+</ParamField>
+
+<ParamField path="separator" type="string" default=", ">
+  String used to join multiple waste types when more than one collection is scheduled on the same day. For example, if both `Recycling` and `Garden Waste` are collected on Monday, the sensor state would read `Recycling, Garden Waste`.
+</ParamField>
+
+## Source attributes
+
+Each entry in `sources` supports the following parameters.
+
+<ParamField path="name" type="string" required>
+  Name of the service provider source module to use. This must match the filename of a source file (without the `.py` extension) from the [list of supported providers](https://github.com/mampfes/hacs_waste_collection_schedule#supported-service-providers). For example, `muellmax_de` or `awido_de`.
+</ParamField>
+
+<ParamField path="args" type="object" required>
+  Source-specific arguments used to identify your collection schedule at the provider, such as your street name, city, or customer number. Required arguments vary by provider — see the documentation for your specific source.
+</ParamField>
+
+<ParamField path="customize" type="list">
+  A list of customization entries applied to waste types returned by this source. Use this to rename types, hide unwanted types, assign icons, or create dedicated calendar entities. See the [Customize reference](/configuration/customize) for full details.
+</ParamField>
+
+<ParamField path="day_offset" type="int" default="0">
+  Number of days to add to every collection date returned by this source. Accepts negative values. Useful when your provider publishes dates that are consistently one day off from your actual collection day.
+</ParamField>
+
+<ParamField path="calendar_title" type="string">
+  A human-readable name for the calendar entity created for this source. If not set, the title defined by the source module is used.
+</ParamField>
+
+## Working example
+
+The example below uses the `muellmax_de` source to fetch a schedule for a specific street. Two waste types are renamed and one is hidden.
+
+```yaml configuration.yaml
+waste_collection_schedule:
+  sources:
+    - name: muellmax_de
+      args:
+        service: His
+        mm_frm_str_sel: "Hauptstraße"
+      customize:
+        - type: brown bin
+          show: false
+        - type: green bin
+          alias: Yard Waste
+          icon: mdi:leaf
+        - type: black bin
+          alias: Garbage
+          icon: mdi:trash-can
+      calendar_title: City Waste Schedule
+  fetch_time: "02:00"
+  random_fetch_time_offset: 15
+  day_switch_time: "10:00"
+  separator: " & "
+```
+
+## Multiple sources
+
+Add a second entry to `sources` to fetch from an additional provider. Each source gets its own calendar entity. Use `source_index` in your sensor configuration to target a specific source.
+
+```yaml configuration.yaml
+waste_collection_schedule:
+  sources:
+    - name: muellmax_de
+      args:
+        service: His
+        mm_frm_str_sel: "Hauptstraße"
+    - name: awido_de
+      args:
+        customer: musterhausen
+        city: Musterstadt
+```
+
+<Tip>
+  To merge data from multiple sources into a single calendar entity, use the `multiple` wrapper source instead of defining separate sources. See [Multiple sources](/guides/multiple-sources) for details.
+</Tip>
+
+## Triggering a manual update
+
+To refresh collection data without waiting for `fetch_time`, call the `waste_collection_schedule.fetch_data` service from **Developer Tools** → **Services** in Home Assistant.

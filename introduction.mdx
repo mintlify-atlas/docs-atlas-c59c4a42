@@ -1,0 +1,47 @@
+---
+title: "Introduction"
+description: "Waste Collection Schedule is a Home Assistant custom integration that retrieves waste collection schedules from 600+ service providers worldwide."
+---
+
+Waste Collection Schedule brings your local garbage, recycling, and composting pickup schedules directly into Home Assistant. Once configured, collection dates automatically appear in your HA Calendar and as sensor entities you can use in automations, dashboard cards, and notifications.
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install via HACS or manually in minutes
+  </Card>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Configure your first source and sensor
+  </Card>
+  <Card title="Supported Providers" icon="globe" href="/providers/overview">
+    Browse 600+ supported service providers
+  </Card>
+  <Card title="Configuration Reference" icon="sliders" href="/configuration/sources">
+    Full YAML and GUI configuration options
+  </Card>
+</CardGroup>
+
+## How it works
+
+Waste Collection Schedule acts as a bridge between your local waste management provider's website and Home Assistant:
+
+1. **Sources** connect to your service provider's website or API and fetch your pickup schedule
+2. **Sensors** expose that schedule as Home Assistant entities with customizable display templates
+3. **Calendars** are automatically populated so you can see upcoming collections at a glance
+
+## Key features
+
+- **600+ providers** across Australia, Austria, Germany, UK, USA, and many more countries
+- **GUI configuration** — add and configure sources directly from the HA Integrations UI (no YAML required for most setups)
+- **Calendar integration** — automatically populates the Home Assistant built-in Calendar
+- **Flexible templates** — format sensor state values using Jinja2 templates (e.g., "Tomorrow", "in 3 days", date strings)
+- **Waste type customization** — rename types, assign icons, show/hide specific waste types, create dedicated calendars per type
+- **Generic ICS/iCal support** — use any service that publishes a standard calendar feed
+- **User-specified dates** — manually enter collection dates if your provider isn't supported yet
+
+## Supported countries
+
+Providers are available for Australia, Austria, Belgium, Canada, Czech Republic, Denmark, Finland, France, Germany, Hungary, Ireland, Italy, Lithuania, Luxembourg, Netherlands, New Zealand, Norway, Poland, Slovakia, Slovenia, South Africa, Spain, Sweden, Switzerland, United Kingdom, United States, and more.
+
+<Tip>
+  If your provider isn't listed, you can often use the [generic ICS source](/providers/ics-ical) if they publish an iCal feed, or [contribute a new source](/contributing/overview) to the project.
+</Tip>

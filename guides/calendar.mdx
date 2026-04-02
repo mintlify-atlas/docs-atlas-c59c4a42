@@ -1,0 +1,84 @@
+---
+title: "Calendar integration"
+description: "Waste Collection Schedule automatically creates Home Assistant Calendar entities for each configured source."
+---
+
+When you configure a source, Waste Collection Schedule automatically creates a calendar entity in Home Assistant. Collection events appear in that calendar so you can view upcoming pickups alongside other HA calendar entries.
+
+## Calendar entity name
+
+By default, the calendar entity name is derived from the source. You can override it with `calendar_title`:
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: YOUR_SOURCE
+      args:
+        # source-specific arguments
+      calendar_title: "City Waste Collection"
+```
+
+The entity will be created as `calendar.city_waste_collection`.
+
+## Per-waste-type calendar entries
+
+By default, all waste types from a source share one calendar entity. You can add a per-waste-type label to calendar events using `dedicated_calendar_title` in the `customize` section:
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: YOUR_SOURCE
+      args:
+        # source-specific arguments
+      customize:
+        - type: Garbage
+          dedicated_calendar_title: "Garbage Pickup"
+        - type: Recycle
+          dedicated_calendar_title: "Recycle Pickup"
+```
+
+This changes the event title in the shared calendar for each waste type without creating additional calendar entities.
+
+## Dedicated calendar entities per waste type
+
+To create a **separate calendar entity** for each waste type, set `use_dedicated_calendar: true`:
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: YOUR_SOURCE
+      args:
+        # source-specific arguments
+      customize:
+        - type: Garbage
+          use_dedicated_calendar: true
+          dedicated_calendar_title: "Garbage"
+        - type: Recycle
+          use_dedicated_calendar: true
+          dedicated_calendar_title: "Recycle"
+```
+
+This creates `calendar.garbage` and `calendar.recycle` in addition to (or instead of) the main source calendar.
+
+<Note>
+`dedicated_calendar_title` sets the display name for the dedicated calendar entity when used alongside `use_dedicated_calendar: true`. Without `use_dedicated_calendar: true`, it only changes the event title within the shared calendar.
+</Note>
+
+## Day offset on calendar events
+
+The global `day_offset` parameter shifts all collection dates by a number of days. This affects both sensors and calendar events, so the calendar will reflect the offset date rather than the raw schedule date.
+
+```yaml
+waste_collection_schedule:
+  sources:
+    - name: YOUR_SOURCE
+      args:
+        # source-specific arguments
+      day_offset: -1  # show events one day earlier than the provider date
+```
+
+Negative values move events earlier; positive values move them later.
+
+## Combining multiple sources into one calendar
+
+To merge collections from multiple sources into a single calendar entity, use the `multiple` wrapper source. See [Multiple sources](/guides/multiple-sources) for details.

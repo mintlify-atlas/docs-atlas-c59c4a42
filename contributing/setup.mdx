@@ -1,0 +1,76 @@
+---
+title: "Local development setup"
+description: "Fork, clone, and configure your local environment to contribute to Waste Collection Schedule."
+---
+
+Follow these steps to get a working local development environment before making any changes.
+
+<Steps>
+  <Step title="Fork the repository">
+    Go to the [repository homepage](https://github.com/mampfes/hacs_waste_collection_schedule) on GitHub and click **Fork** in the top-right corner to create your own copy of the repository.
+
+    For more detail, see GitHub's [fork-a-repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo) guide.
+  </Step>
+
+  <Step title="Clone your fork">
+    On your fork's homepage, click **Code** and copy the URL. Then clone it to your local machine, replacing `YOUR-GITHUB-USERNAME` with your actual username:
+
+    ```bash
+    git clone https://github.com/YOUR-GITHUB-USERNAME/hacs_waste_collection_schedule
+    cd hacs_waste_collection_schedule
+    ```
+  </Step>
+
+  <Step title="Create a new branch">
+    Always work on a dedicated branch rather than directly on `master`. Name your branch after what you are adding or fixing:
+
+    ```bash
+    git branch adding_abc_com
+    git checkout adding_abc_com
+    ```
+
+    Or in a single command:
+
+    ```bash
+    git checkout -b adding_abc_com
+    ```
+  </Step>
+
+  <Step title="Install Python dependencies">
+    The project dependencies are listed in `requirements.txt` in the repository root. Install them into your Python environment:
+
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+    Key dependencies include `requests`, `beautifulsoup4`, `icalendar`, `icalevents`, `PyYAML`, and `pytest`.
+  </Step>
+
+  <Step title="Run pytest to verify your environment">
+    Before making any changes, confirm the test suite passes:
+
+    ```bash
+    pytest
+    ```
+
+    Run this from the `hacs_waste_collection_schedule` directory. pytest validates that all source attributes are set correctly, required files are present, and that `update_docu_links.py` runs without errors.
+
+    <Note>
+      pytest does **not** execute the source scripts themselves or make live network requests. It only checks metadata and file structure.
+    </Note>
+  </Step>
+</Steps>
+
+## update_docu_links.py
+
+The `update_docu_links.py` script in the repository root regenerates `README.md` and `info.md` from the metadata in all source files and ICS YAML configs. Run it any time you add or modify a source:
+
+```bash
+./update_docu_links.py
+```
+
+The script reads the `TITLE`, `URL`, `COUNTRY`, and `EXTRA_INFO` attributes from each Python source and the corresponding fields from each ICS YAML file. It uses these to build the provider listing in both files.
+
+<Warning>
+  Always run `update_docu_links.py` before opening a pull request. The CI checks will fail if `README.md` and `info.md` are out of date.
+</Warning>

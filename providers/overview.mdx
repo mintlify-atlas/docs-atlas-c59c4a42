@@ -1,0 +1,77 @@
+---
+title: 'Supported providers'
+description: 'Browse the 600+ service provider integrations for Waste Collection Schedule, or use a generic source like ICS/iCal to connect any provider that publishes a calendar feed.'
+---
+
+Waste Collection Schedule retrieves data through **sources**. Each source is a connector to a specific service provider's website or data format. When Home Assistant starts, each configured source fetches the latest schedule and feeds it into the integration's calendar.
+
+There are two categories of source:
+
+- **API and web-scraping sources** — dedicated connectors for individual providers, covering 600+ services worldwide.
+- **Generic sources** — format-based connectors that work with any provider that publishes data in that format (ICS/iCal files, or manually entered dates).
+
+## Supported countries
+
+Dedicated API sources are available for providers across the following countries:
+
+Australia, Austria, Belgium, Canada, Czech Republic, Denmark, Finland, France, Germany, Hungary, Ireland, Italy, Lithuania, Luxembourg, Netherlands, New Zealand, Norway, Poland, Slovakia, Slovenia, Spain, Sweden, Switzerland, United Kingdom, United States, and more.
+
+<Note>
+The full list of individual providers within each country is maintained in the [GitHub repository README](https://github.com/mampfes/hacs_waste_collection_schedule#readme). New sources are added regularly by contributors.
+</Note>
+
+## How to find your provider
+
+<Steps>
+  <Step title="Search the GitHub README">
+    Open the [Waste Collection Schedule README](https://github.com/mampfes/hacs_waste_collection_schedule#readme) and search for your city, region, or waste management company name. Providers are grouped by country.
+  </Step>
+  <Step title="Use the GUI configuration flow">
+    When adding the integration through the Home Assistant UI, the configuration flow automatically lists all available providers grouped by country. Browse or search within the flow to locate yours.
+  </Step>
+  <Step title="Check if your provider publishes an ICS feed">
+    Many providers that are not yet explicitly supported publish an ICS/iCal calendar feed on their website. If yours does, you can use the generic ICS source to connect it without a dedicated integration.
+  </Step>
+</Steps>
+
+## What to do if your provider is not listed
+
+<AccordionGroup>
+  <Accordion title="Use the ICS/iCal source">
+    If your waste management provider publishes a calendar subscription link (often labeled "add to calendar", "export to iCal", or similar), you can paste that URL directly into the generic ICS source. No dedicated integration is needed.
+
+    See the [ICS/iCal source](/providers/ics-ical) page for configuration details.
+  </Accordion>
+  <Accordion title="Request a new source on GitHub">
+    Open a [source request issue](https://github.com/mampfes/hacs_waste_collection_schedule/issues/new?assignees=&labels=source+request&projects=&template=SOURCE-REQUEST.yml&title=%5BSource+Request%5D%3A+) on GitHub. Check the existing issues first to avoid duplicates.
+  </Accordion>
+  <Accordion title="Contribute a new source">
+    The integration framework is designed to be extended. If you are comfortable with Python, you can write and submit a new source connector. Refer to the [contribution guide](https://github.com/mampfes/hacs_waste_collection_schedule/blob/master/CONTRIBUTING.md) in the repository.
+  </Accordion>
+  <Accordion title="Enter dates manually">
+    If none of the above options apply, you can use the static source to enter your collection dates by hand, either as explicit dates or as recurring patterns (weekly, bi-weekly, monthly, etc.).
+
+    See the [Static source](/providers/static) page for configuration details.
+  </Accordion>
+</AccordionGroup>
+
+## Generic sources
+
+These sources work independently of any specific provider. Use them when no dedicated source exists for your area, or when you want to supplement an existing source with additional dates.
+
+<CardGroup cols={2}>
+  <Card title="ICS / iCal" icon="calendar" href="/providers/ics-ical">
+    Parses any ICS or iCal file, either from a URL or a local file. Works with any provider that publishes a calendar subscription feed.
+  </Card>
+  <Card title="Static" icon="list" href="/providers/static">
+    Manually specify collection dates as a list, or define a recurring pattern such as every two weeks on a Friday. Useful for providers not yet supported or for one-off schedule changes.
+  </Card>
+</CardGroup>
+
+## Provider-specific configuration
+
+Each dedicated source has its own set of required and optional configuration arguments (such as address, postcode, or service type) documented in the GitHub repository. Navigate to your provider's documentation page linked from the README for the exact YAML configuration to use.
+
+<Tip>
+Configuration arguments vary between providers. Always consult the provider-specific documentation page rather than copying a generic example.
+</Tip>

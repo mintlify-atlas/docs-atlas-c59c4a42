@@ -1,0 +1,205 @@
+---
+title: "Customize"
+description: "Rename, hide, or assign icons and dedicated calendars to individual waste types returned by a source."
+---
+
+The `customize` block lets you control how each waste type from a source is displayed in Home Assistant. You can rename types to friendlier names, hide types you don't want to track, assign icons or pictures, and create dedicated calendar entities for specific types.
+
+`customize` is defined per-source, inside each entry in the `sources` list.
+
+## Configuration structure
+
+```yaml configuration.yaml
+waste_collection_schedule:
+  sources:
+    - name: SOURCE_NAME
+      args:
+        arg1: value1
+      customize:
+        - type: TYPE_EXACTLY_AS_RETURNED_BY_SOURCE
+          alias: Friendly Name
+          show: true
+          icon: mdi:trash-can
+          picture: /local/waste-icons/garbage.png
+          use_dedicated_calendar: false
+          dedicated_calendar_title: My Garbage Calendar
+```
+
+## Parameters
+
+<ParamField path="type" type="string" required>
+  The exact waste type string as returned by the source. This value is case-sensitive and must match the raw output from the provider exactly — including spacing and punctuation. If you set an `alias`, use the alias in sensor `types` filters, not this raw value.
+
+  <Warning>
+    If the `type` value does not exactly match what the source returns, the customization has no effect. Check the source's raw output (for example via the Home Assistant developer tools or logs) to confirm the correct string.
+  </Warning>
+</ParamField>
+
+<ParamField path="alias" type="string">
+  A human-readable replacement for the waste type name shown in Home Assistant. When set, all sensors and calendars display the alias instead of the raw type string. If you use `alias`, reference the alias — not the original type — in sensor `types` filters.
+</ParamField>
+
+<ParamField path="show" type="boolean" default="true">
+  Set to `false` to completely hide this waste type from all sensors and calendars. Hidden types are excluded from the upcoming list and do not appear in the **More info** dialog.
+</ParamField>
+
+<ParamField path="icon" type="string">
+  An [MDI icon](https://pictogrammers.com/library/mdi/) identifier (e.g., `mdi:trash-can`, `mdi:recycle`, `mdi:leaf`) to associate with this waste type. The icon appears in calendar entries and can be referenced in Lovelace cards.
+</ParamField>
+
+<ParamField path="picture" type="string">
+  Path to an image file to associate with this waste type. Use the `/local/` prefix to reference files stored in your Home Assistant `config/www/` directory (e.g., `/local/waste-icons/recycling.png`).
+</ParamField>
+
+<ParamField path="use_dedicated_calendar" type="boolean" default="false">
+  When `true`, creates a separate calendar entity exclusively for this waste type. This is useful when you want individual calendar entries per waste stream rather than a combined calendar.
+</ParamField>
+
+<ParamField path="dedicated_calendar_title" type="string">
+  A human-readable name for the dedicated calendar entity created when `use_dedicated_calendar` is `true`. If not set, the alias (or raw type name) is used as the calendar title.
+</ParamField>
+
+## Examples
+
+### Rename a waste type
+
+Use `alias` to replace a provider's internal name with a friendlier label. Sensors that filter by type must use the alias value.
+
+```yaml configuration.yaml
+waste_collection_schedule:
+  sources:
+    - name: muellmax_de
+      args:
+        service: His
+        mm_frm_str_sel: "Hauptstraße"
+      customize:
+        - type: green bin
+          alias: Yard Waste
+        - type: black bin
+          alias: Garbage
+
+sensor:
+  - platform: waste_collection_schedule
+    name: next_yard_waste
+    types:
+      - Yard Waste  # Use the alias, not "green bin"
+```
+
+### Hide an unwanted waste type
+
+Set `show: false` to exclude a type from all sensors and calendars.
+
+```yaml configuration.yaml
+waste_collection_schedule:
+  sources:
+    - name: muellmax_de
+      args:
+        service: His
+        mm_frm_str_sel: "Hauptstraße"
+      customize:
+        - type: brown bin
+          show: false  # This type will not appear anywhere
+```
+
+### Assign icons to waste types
+
+Icons from the [MDI icon set](https://pictogrammers.com/library/mdi/) can be assigned to each waste type.
+
+```yaml configuration.yaml
+waste_collection_schedule:
+  sources:
+    - name: muellmax_de
+      args:
+        service: His
+        mm_frm_str_sel: "Hauptstraße"
+      customize:
+        - type: black bin
+          alias: Garbage
+          icon: mdi:trash-can
+        - type: green bin
+          alias: Yard Waste
+          icon: mdi:leaf
+        - type: blue bin
+          alias: Recycling
+          icon: mdi:recycle
+```
+
+### Assign a picture to a waste type
+
+Store images in `config/www/` and reference them with the `/local/` prefix.
+
+```yaml configuration.yaml
+waste_collection_schedule:
+  sources:
+    - name: muellmax_de
+      args:
+        service: His
+        mm_frm_str_sel: "Hauptstraße"
+      customize:
+        - type: black bin
+          alias: Garbage
+          picture: /local/waste-icons/garbage.png
+        - type: blue bin
+          alias: Recycling
+          picture: /local/waste-icons/recycling.png
+```
+
+### Create dedicated calendars per waste type
+
+When you want each waste type to appear as its own calendar entity in Home Assistant, set `use_dedicated_calendar: true`.
+
+```yaml configuration.yaml
+waste_collection_schedule:
+  sources:
+    - name: muellmax_de
+      args:
+        service: His
+        mm_frm_str_sel: "Hauptstraße"
+      customize:
+        - type: black bin
+          alias: Garbage
+          use_dedicated_calendar: true
+          dedicated_calendar_title: Garbage Collection
+        - type: blue bin
+          alias: Recycling
+          use_dedicated_calendar: true
+          dedicated_calendar_title: Recycling Collection
+        - type: green bin
+          alias: Yard Waste
+          use_dedicated_calendar: true
+          dedicated_calendar_title: Yard Waste Collection
+```
+
+This creates three separate calendar entities — one for each waste type — in addition to the combined source calendar.
+
+### Full customize example
+
+```yaml configuration.yaml
+waste_collection_schedule:
+  sources:
+    - name: muellmax_de
+      args:
+        service: His
+        mm_frm_str_sel: "Hauptstraße"
+      customize:
+        - type: brown bin
+          show: false                        # hide entirely
+        - type: black bin
+          alias: Garbage
+          icon: mdi:trash-can
+          picture: /local/waste/garbage.png
+          use_dedicated_calendar: true
+          dedicated_calendar_title: Garbage
+        - type: blue bin
+          alias: Recycling
+          icon: mdi:recycle
+          use_dedicated_calendar: true
+          dedicated_calendar_title: Recycling
+        - type: green bin
+          alias: Yard Waste
+          icon: mdi:leaf
+```
+
+<Note>
+  Once you set an `alias`, all references to that waste type elsewhere — including sensor `types` filters — must use the alias, not the original `type` string.
+</Note>

@@ -1,0 +1,255 @@
+---
+title: "Sensors"
+description: "Configure waste collection sensors to surface collection dates and types as Home Assistant entities."
+---
+
+Sensors read data from one or more configured sources and expose it as Home Assistant entity states. You can create multiple sensors per source — for example, one sensor that shows the next collection of any type, and separate sensors for each individual waste type.
+
+## Configuration structure
+
+Add sensors under the `sensor` platform in `configuration.yaml`:
+
+```yaml configuration.yaml
+sensor:
+  - platform: waste_collection_schedule
+    source_index: 0
+    name: next_collection
+    details_format: upcoming
+    count: 5
+    leadtime: 7
+    value_template: "{{value.types|join(', ')}} on {{value.date.strftime('%d.%m.%Y')}}"
+    date_template: "{{value.date.strftime('%d.%m.%Y')}}"
+    add_days_to: false
+    event_index: 0
+    types:
+      - Garbage
+      - Recycling
+```
+
+## Parameters
+
+<ParamField path="platform" type="string" required>
+  Must be `waste_collection_schedule`. Identifies this as a Waste Collection Schedule sensor.
+</ParamField>
+
+<ParamField path="name" type="string" required>
+  The entity name used in Home Assistant. This value is also used to derive the entity ID (e.g., `sensor.next_collection`).
+</ParamField>
+
+<ParamField path="source_index" type="int | list" default="0">
+  Assigns the sensor to a specific source by its position in the `sources` list (zero-indexed). The first source is `0`, the second is `1`, and so on.
+
+  To combine data from multiple sources into one sensor, pass a list of indexes:
+
+  ```yaml
+  source_index: [0, 1]
+  ```
+
+  <Note>
+    This parameter is only available in YAML configuration. When using the GUI, sensors are linked directly to their source.
+  </Note>
+</ParamField>
+
+<ParamField path="details_format" type="string" default="upcoming">
+  Controls the format of the attributes shown in the Home Assistant **More info** dialog. See [details_format options](#details-format-options) below for a comparison of each mode.
+</ParamField>
+
+<ParamField path="count" type="int">
+  Limits the **More info** dialog to showing the next _n_ upcoming collections. Has no effect on the sensor state value.
+</ParamField>
+
+<ParamField path="leadtime" type="int">
+  Limits the **More info** dialog to only showing collections scheduled within the next _n_ days. Has no effect on the sensor state value.
+</ParamField>
+
+<ParamField path="value_template" type="string">
+  A Home Assistant template string that formats the sensor's state. Uses the template variables `value.date`, `value.daysTo`, and `value.types`. If not set, the default formatting is used. See [template variables](#template-variables) below.
+</ParamField>
+
+<ParamField path="date_template" type="string">
+  A Home Assistant template string that formats dates appearing in the **More info** dialog. Uses the same template variables as `value_template`.
+</ParamField>
+
+<ParamField path="add_days_to" type="boolean" default="false">
+  When `true`, adds a `daysTo` attribute to the sensor entity containing the number of days until the next collection (0 = today, 1 = tomorrow, etc.).
+</ParamField>
+
+<ParamField path="event_index" type="int" default="0">
+  Targets a specific collection by its position in the upcoming schedule. `0` is the next collection, `1` is the second upcoming collection, and so on. Useful for creating dedicated sensors for "next", "second upcoming", etc.
+</ParamField>
+
+<ParamField path="types" type="list">
+  Filters the sensor to only show collections matching the listed waste types. Type names must match the `alias` value if you have defined one in the `customize` block, otherwise they must match the raw type returned by the source.
+</ParamField>
+
+## Details format options
+
+The `details_format` parameter controls what appears in the Home Assistant **More info** dialog for the sensor entity.
+
+| Value | Description |
+|---|---|
+| `upcoming` | Shows a chronological list of upcoming collections with dates and waste types. Default. |
+| `appointment_types` | Shows each waste type alongside its next scheduled collection date. |
+| `generic` | Exposes all attributes as raw Python data types for use in advanced automations. |
+| `hidden` | Hides all collection detail attributes from the entity. |
+
+<Tabs>
+  <Tab title="upcoming">
+    Shows a list of upcoming collections in chronological order. Each entry includes the date and waste type(s) scheduled for that day.
+
+    ```yaml
+    details_format: upcoming
+    count: 5
+    ```
+  </Tab>
+  <Tab title="appointment_types">
+    Shows each distinct waste type and the date of its next collection. Useful for a quick overview of when each type is next due.
+
+    ```yaml
+    details_format: appointment_types
+    ```
+  </Tab>
+  <Tab title="generic">
+    Exposes raw data as generic Python types. Use this format when writing automations or template sensors that consume the attribute data directly.
+
+    ```yaml
+    details_format: generic
+    ```
+  </Tab>
+  <Tab title="hidden">
+    Suppresses all collection detail attributes. The sensor state is still set, but no additional attributes appear in the **More info** dialog.
+
+    ```yaml
+    details_format: hidden
+    ```
+  </Tab>
+</Tabs>
+
+## Template variables
+
+Use these variables inside `value_template` and `date_template` to format sensor output.
+
+| Variable | Type | Description |
+|---|---|---|
+| `value.date` | `datetime.date` | The date of the next matching collection. Use `strftime` to format. |
+| `value.daysTo` | `int` | Days until the next collection. `0` means today, `1` means tomorrow. |
+| `value.types` | `list of strings` | Waste types scheduled for the next collection. Use the `join` filter to concatenate. |
+
+### Template examples
+
+```yaml
+# Show only the waste types
+value_template: "{{value.types|join(', ')}}"
+
+# Show days remaining
+value_template: "in {{value.daysTo}} days"
+
+# Show day name and full date
+value_template: "on {{value.date.strftime('%a')}}, {{value.date.strftime('%d.%m.%Y')}}"
+
+# Show types and date together
+value_template: "{{value.types|join(' & ')}} on {{value.date.strftime('%d %b')}}"
+```
+
+## Common sensor configurations
+
+<CodeGroup>
+
+```yaml Next collection (any type)
+sensor:
+  - platform: waste_collection_schedule
+    name: next_collection
+```
+
+```yaml Next collection with template
+sensor:
+  - platform: waste_collection_schedule
+    name: next_collection
+    value_template: "{{value.types|join(', ')}} in {{value.daysTo}} days"
+    add_days_to: true
+```
+
+```yaml Filter to a specific waste type
+sensor:
+  - platform: waste_collection_schedule
+    name: next_recycling
+    types:
+      - Recycling
+
+```
+
+```yaml Sensors for each waste type
+sensor:
+  - platform: waste_collection_schedule
+    name: next_garbage
+    types:
+      - Garbage
+
+  - platform: waste_collection_schedule
+    name: next_recycling
+    types:
+      - Recycling
+
+  - platform: waste_collection_schedule
+    name: next_yard_waste
+    types:
+      - Yard Waste
+```
+
+```yaml Multiple sources combined
+sensor:
+  - platform: waste_collection_schedule
+    name: all_collections
+    source_index: [0, 1]
+    details_format: upcoming
+    count: 7
+```
+
+```yaml Second upcoming collection
+sensor:
+  - platform: waste_collection_schedule
+    name: second_collection
+    event_index: 1
+    value_template: "{{value.types|join(', ')}} on {{value.date.strftime('%d %b')}}"
+```
+
+</CodeGroup>
+
+## Full working example
+
+The configuration below combines sources and sensors. Two waste types are renamed via `customize`, and separate sensors track each type.
+
+```yaml configuration.yaml
+waste_collection_schedule:
+  sources:
+    - name: muellmax_de
+      args:
+        service: His
+        mm_frm_str_sel: "Hauptstraße"
+      customize:
+        - type: brown bin
+          show: false
+        - type: green bin
+          alias: Yard Waste
+        - type: black bin
+          alias: Garbage
+
+sensor:
+  # Next collection of any type
+  - platform: waste_collection_schedule
+    name: next_collection
+    value_template: "{{value.types|join(', ')}}"
+    add_days_to: true
+
+  # Next yard waste collection
+  - platform: waste_collection_schedule
+    name: next_yard_collection
+    types:
+      - Yard Waste
+
+  # Next garbage collection
+  - platform: waste_collection_schedule
+    name: next_garbage_collection
+    types:
+      - Garbage
+```
